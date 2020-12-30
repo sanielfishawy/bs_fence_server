@@ -9,8 +9,13 @@ from nextion import Nextion, EventType
 
 class NextionIO(Thread):
 
-    def __init__(self):
+    def __init__(self,
+        event_callback=None,
+        get_callback=None,
+    ):
         super().__init__()
+        self.event_callback = event_callback
+        self.get_callback = get_callback
         self.setup_logging()
         self.queue = asyncio.Queue()
 
@@ -23,18 +28,29 @@ class NextionIO(Thread):
             ])
 
     def event_handler(self, type_, data):
+        if self.event_callback:
+            self.event_callback(type_, data)
+
         if type_ == EventType.STARTUP:
             logging.info('We have booted up!')
         elif type_ == EventType.TOUCH:
             logging.info('A button (id: %d) was touched on page %d' % (data.component_id, data.page_id))
 
-        logging.info('Event %s data: %s', type, str(data))
+        logging.info('Event %s data: %s', type_, str(data))
 
     def set_field(self, field, value):
-        asyncio.run(self.set_field_async(field, value))
+        asyncio.run_coroutine_threadsafe(self.set_field_async(field, value), self.loop)
 
     async def set_field_async(self, field, value):
         await self.client.set(field, value)
+
+    def get_field(self, field):
+        asyncio.run_coroutine_threadsafe(self.get_field_async(field), self.loop)
+
+    async def get_field_async(self, field):
+        res = await self.client.get(field)
+        if self.get_callback:
+            self.get_callback(res)
 
     async def worker(self, worker_name, queue: asyncio.Queue):
         while True:
@@ -73,7 +89,5 @@ if __name__ == '__main__':
     nex.start()
     nex.add_task('a')
     nex.add_task('b')
-    nex.add_task('c')
-    nex.add_task('d')
     pass
 
