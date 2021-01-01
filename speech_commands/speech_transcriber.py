@@ -1,9 +1,10 @@
-import  speech_recognition as sr
+import  speech_recognition_local as sr
 # from . import speech_recognition_local as sr
 from threading import Thread
 import logging
 from microphone_helper import MicrophoneHelper
 
+logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-9s) %(message)s',)
 
 class SpeechTranscriber(Thread):
 
@@ -18,7 +19,7 @@ class SpeechTranscriber(Thread):
         self.callback = callback
         self.recognizer = sr.Recognizer()
         self.recognizer.dynamic_energy_threshold = False
-        self.recognizer.energy_threshold = 2500
+        self.recognizer.energy_threshold = 1000
         self.recognizer.pause_threshold = 0.5
         self.mic = sr.Microphone(device_index=self.__class__.MIC_INDEX, sample_rate=44100)
         logging.debug(f'Mic: {MicrophoneHelper.get_microphone_name_with_index(self.__class__.MIC_INDEX)}')
