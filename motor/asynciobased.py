@@ -1,6 +1,7 @@
 from asyncio.queues import Queue
 import logging
 import asyncio
+import queue
 import time
 import RPi.GPIO as gpio
 from threading import Thread
@@ -28,6 +29,7 @@ class Motor(Thread):
         self.periodic = Periodic(period_sec=.0003)
 
     def set_position(self, position):
+        logging.debug(f'motor setting position: {position}')
         self.add_command({self.cls.POSITION_KEY: position})
 
     def setup_logging(self):
@@ -77,6 +79,7 @@ class Motor(Thread):
     def add_command(self, command):
         logging.info(f'Added to queue: {command}')
         self.queue.put_nowait(command)
+        logging.debug(f'queue: {self.queue}')
 
     async def task(self, name, queue: asyncio.Queue):
         while(True):
@@ -103,6 +106,9 @@ class Motor(Thread):
         logging.debug('queue joined')
         self.setup_workers()
         print('run async complete')
+        # while(True):
+        #     logging.debug(f'queue: {self.queue}')
+        #     await asyncio.sleep(1)
 
     def run(self):
         logging.debug('run started')
