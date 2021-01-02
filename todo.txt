@@ -1,4 +1,12 @@
-- Show 4 decimal number in inches and create a keypad with enter
-- Run async loop in another thread.
-- add server from light
--
+Web UI
+    - install on device
+
+
+server
+    - Add motor command to server
+    - test ui with motor
+    - add voice command to server
+    - test voice with motor
+    - add nextion
+    - test with nextion
+

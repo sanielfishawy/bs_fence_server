@@ -9,7 +9,8 @@ from nextion import Nextion, EventType
 
 class NextionIO(Thread):
 
-    def __init__(self,
+    def __init__(
+        self,
         event_callback=None,
         get_callback=None,
     ):
