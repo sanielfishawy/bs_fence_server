@@ -74,7 +74,7 @@ class CommandInterpreter:
             num = .25
 
         if not in_out:
-            return Command(self.request_paths.SAVE_POSTION_PATH, {self.state_helpler.POSITION_KEY: num})
+            return Command(self.request_paths.SAVE_POSITION_PATH, {self.state_helpler.POSITION_KEY: num})
         elif in_out == 'bigger':
             return Command(self.request_paths.CHANGE_POSITION_PATH, {self.state_helpler.POSITION_KEY: num})
         elif in_out == 'smaller':

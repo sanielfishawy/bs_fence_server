@@ -5,18 +5,23 @@ import argparse
 import sys
 from flask import Flask, request, json
 import asyncio
+import speech_recognition
 from werkzeug.serving import is_running_from_reloader
 from fence_state import FenceState, StateHelper
 from motor.threadbased import Motor
+from nextion_client import NextionClient
+from speech_commands.runner import Runner as SpeechRunner
 
 logging.basicConfig(level=logging.INFO,
                     format='(%(threadName)-9s) %(message)s',)
 
-motor = Motor()
-motor.set_position(5)
-fence_state = FenceState()
-
 HOST = '0.0.0.0'
+
+class RequestPaths:
+    FENCE_PATH = '/fence'
+    SAVE_POSITION_PATH = FENCE_PATH + '/save_position'
+    CHANGE_POSITION_PATH = FENCE_PATH + '/change_position'
+
 
 arg_parser = argparse.ArgumentParser(description='Start fence server.')
 arg_parser.add_argument('-p', '--port',
@@ -24,11 +29,15 @@ arg_parser.add_argument('-p', '--port',
                         type=int,
                         help='Port to use for server.',
                         metavar='port',)
+
 PORT = arg_parser.parse_known_args()[0].port
 
-class RequestPaths:
-    FENCE_PATH = '/fence'
-    SAVE_POSITION_PATH = FENCE_PATH + '/save_position'
+fence_state = FenceState()
+motor = Motor()
+nextion = NextionClient()
+speech_runner = SpeechRunner(RequestPaths, StateHelper, HOST, PORT)
+speech_runner.run()
+
 
 # set the project root directory as the static folder, you can set others.
 app = Flask(__name__, static_url_path='')
@@ -45,9 +54,22 @@ def fence():
 def save_position():
     position = getObjectFromRequest(request)[StateHelper.POSITION_KEY]
     logging.debug(f'server got pos: {position}')
+    set_state_and_devices(position)
+    return fence_state.get_state()
+
+@app.route(RequestPaths.CHANGE_POSITION_PATH, methods=['POST'])
+def change_position():
+    change = getObjectFromRequest(request)[StateHelper.POSITION_KEY]
+    position = fence_state.get_position() + change
+    logging.debug(f'server got pos: {position}')
+    set_state_and_devices(position)
+    return fence_state.get_state()
+
+def set_state_and_devices(position):
     fence_state.set_position(position)
     motor.set_position(position)
-    return fence_state.get_state()
+    nextion.set_inches(str(position))
+
 
 def getObjectFromRequest(request):
     return json.loads(request.data.decode())
