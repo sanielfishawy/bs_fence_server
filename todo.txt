@@ -8,10 +8,11 @@ Web UI
     - install on device
 
 server
-    - Add motor command to server
-    - test ui with motor
+    - add change command to server
     - add voice command to server
     - test voice with motor
     - add nextion
     - test with nextion
+    - change logo
+    - parnell document
 

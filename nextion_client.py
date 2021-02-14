@@ -12,6 +12,7 @@ class NextionClient:
         if data.component_id == 3:
             logging.info('send button pressed')
             self.nex.get_field('t0.txt')
+            self.set_inches('100')
 
     def on_get(self, value):
         logging.info(f'got {value}')
@@ -24,6 +25,7 @@ class NextionClient:
 
 if __name__ == '__main__':
     nc = NextionClient()
+    nc.set_inches('10')
 
 
 

@@ -1,15 +1,16 @@
-import  speech_recognition_local as sr
-# from . import speech_recognition_local as sr
 from threading import Thread
+import pyaudio
+import wave
 import logging
-from microphone_helper import MicrophoneHelper
+import audioop
+import speech_recognition as sr
+from .microphone_helper import MicrophoneHelper
 
-logging.basicConfig(level=logging.DEBUG, format='(%(threadName)-9s) %(message)s',)
+logging.basicConfig(level=logging.INFO, format='(%(threadName)-9s) %(message)s')
+
+WAVE_OUTPUT_FILENAME = "recordedFile.wav"
 
 class SpeechTranscriber(Thread):
-
-    # MIC_INDEX = MicrophoneHelper.get_microphone_index(MicrophoneHelper.PULSE_AUDIO)
-    MIC_INDEX = MicrophoneHelper.get_microphone_index(MicrophoneHelper.I_TALK_MIC)
 
     def __init__(
             self,
@@ -17,32 +18,14 @@ class SpeechTranscriber(Thread):
         ):
         super(self.__class__, self).__init__()
         self.callback = callback
-        self.recognizer = sr.Recognizer()
-        self.recognizer.dynamic_energy_threshold = False
-        self.recognizer.energy_threshold = 1000
-        self.recognizer.pause_threshold = 0.5
-        self.mic = sr.Microphone(device_index=self.__class__.MIC_INDEX, sample_rate=44100)
-        logging.debug(f'Mic: {MicrophoneHelper.get_microphone_name_with_index(self.__class__.MIC_INDEX)}')
+        self.phrase_grabber = MicPhraseGrabber()
+        self.audio_transcriber = AudioTranscriber()
 
     def capture_audio(self):
-        audio = None
-        with self.mic as source:
-            logging.debug(f'energy threshold {self.recognizer.energy_threshold}')
-            logging.debug(f'listening on {MicrophoneHelper.get_microphone_name_with_index(self.__class__.MIC_INDEX)}...')
-            audio = self.recognizer.listen(source)
-        return audio
+        self.phrase_grabber.get_and_save_audio_to_wave_file()
 
     def get_text_from_audio(self, audio):
-        logging.debug('processing...')
-        response = Response(success=False)
-        try:
-            response.transcript =  self.recognizer.recognize_google(audio)
-            response.success = True
-        except sr.RequestError as err:
-            response.error = 'Api not available'
-        except sr.UnknownValueError as err:
-            response.error = 'Unrecognized speech'
-        return response
+        return self.audio_transcriber.get_transcript()
 
     def run(self):
         while True:
@@ -50,12 +33,104 @@ class SpeechTranscriber(Thread):
             resp = self.get_text_from_audio(audio)
             if resp.success:
                 txt = resp.transcript
-                logging.debug('\033[92m' + txt + '\033[0m')
+                logging.info('\033[92m' + txt + '\033[0m')
                 self.callback and self.callback(txt)
                 # command = CI.interpret_command(resp['transcript'])
                 # command and logging.debug(command)
             else:
                 logging.error(resp.error)
+
+class MicPhraseGrabber:
+
+    FORMAT = pyaudio.paInt16
+    WIDTH = pyaudio.get_sample_size(FORMAT)
+    CHANNELS = 1
+    RATE = 44100
+    CHUNK = 512
+    RECORD_SECONDS = 5
+    DEVICE_INDEX = 2
+
+    def __init__(self):
+        self.audio = pyaudio.PyAudio()
+        self.mic_helper = MicrophoneHelper()
+        self.cls = self.__class__
+
+    def get_and_save_audio_to_wave_file(self):
+        data = self.get_audio_data()
+        self.write_wav_file(data)
+
+    def get_audio_data(self):
+        stream = self.audio.open(
+            format=self.cls.FORMAT,
+            channels=self.cls.CHANNELS,
+            rate=self.cls.RATE,
+            input_device_index = self.mic_helper.get_microphone_index(mic=self.mic_helper.I_TALK_MIC),
+            frames_per_buffer=self.cls.CHUNK,
+            input=True,
+
+        )
+
+        logging.debug(f'Width: {self.cls.WIDTH}')
+        recorded_frames = []
+        last_quiet_frames = []
+        first_loud_frames = []
+        while(True):
+            for i in range(20):
+                data = stream.read(self.cls.CHUNK, exception_on_overflow=False)
+                recorded_frames.append(data)
+
+            energy = audioop.rms(b''.join(recorded_frames), self.cls.WIDTH)
+            logging.debug(energy)
+            if energy < 300:
+                last_quiet_frames = recorded_frames
+            else:
+                first_loud_frames = recorded_frames
+                recorded_frames = []
+                break
+            recorded_frames = []
+
+        logging.info('grabbing phrase')
+
+        for i in range(200):
+            data = stream.read(self.cls.CHUNK, exception_on_overflow=False)
+            recorded_frames.append(data)
+
+        stream.stop_stream()
+        stream.close()
+
+        all_frames = last_quiet_frames + first_loud_frames + recorded_frames
+        data = b''.join(all_frames)
+        return data
+
+    def write_wav_file(self, data):
+        waveFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
+        waveFile.setnchannels(self.cls.CHANNELS)
+        waveFile.setsampwidth(self.cls.WIDTH)
+        waveFile.setframerate(self.cls.RATE)
+        waveFile.writeframes(data)
+        waveFile.close()
+
+
+
+class AudioTranscriber:
+
+    @classmethod
+    def get_transcript(cls):
+        r = sr.Recognizer()
+        with sr.WavFile(WAVE_OUTPUT_FILENAME) as source:
+            audio = r.record(source)
+
+        logging.info('processing...')
+        response = Response(success=False)
+        try:
+            txt = r.recognize_google(audio)
+            response.transcript =  txt
+            response.success = True
+        except sr.RequestError as err:
+            response.error = 'Api not available'
+        except sr.UnknownValueError as err:
+            response.error = 'Unrecognized speech'
+        return response
 
 
 class Response():
@@ -72,7 +147,7 @@ class Response():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-9s) %(message)s',)
-    sc = SpeechTranscriber()
-    sc.start()
+    from microphone_helper import MicrophoneHelper
+    sp = SpeechTranscriber()
+    sp.start()
+    sp.join()
