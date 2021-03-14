@@ -8,8 +8,9 @@ import asyncio
 import speech_recognition
 from werkzeug.serving import is_running_from_reloader
 from fence_state import FenceState, StateHelper
-from motor.threadbased import Motor
-from nextion_client import NextionClient
+# from motor.threadbased import Motor
+from odrive_motor.odrive_wrapper import OdriveWrapper
+# from nextion_client import NextionClient
 from speech_commands.runner import Runner as SpeechRunner
 
 logging.basicConfig(level=logging.INFO,
@@ -33,8 +34,11 @@ arg_parser.add_argument('-p', '--port',
 PORT = arg_parser.parse_known_args()[0].port
 
 fence_state = FenceState()
-motor = Motor()
-nextion = NextionClient()
+# motor = Motor()
+# nextion = NextionClient()
+motor = OdriveWrapper(axis=0)
+motor.run()
+
 speech_runner = SpeechRunner(RequestPaths, StateHelper, HOST, PORT)
 speech_runner.run()
 
@@ -60,16 +64,14 @@ def save_position():
 @app.route(RequestPaths.CHANGE_POSITION_PATH, methods=['POST'])
 def change_position():
     change = getObjectFromRequest(request)[StateHelper.POSITION_KEY]
+    logging.debug(f'server got change: {change}')
     position = fence_state.get_position() + change
-    logging.debug(f'server got pos: {position}')
     set_state_and_devices(position)
     return fence_state.get_state()
 
 def set_state_and_devices(position):
     fence_state.set_position(position)
-    motor.set_position(position)
-    nextion.set_inches(str(position))
-
+    motor.set_position_inches(position)
 
 def getObjectFromRequest(request):
     return json.loads(request.data.decode())

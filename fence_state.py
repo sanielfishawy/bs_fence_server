@@ -8,7 +8,7 @@ class StateHelper:
     @classmethod
     def get_default_state(cls):
         return {
-            cls.POSITION_KEY: 15,
+            cls.POSITION_KEY: 0,
             cls.MIN_POSITION_KEY: 0,
             cls.MAX_POSITION_KEY: 15,
         }
@@ -42,4 +42,8 @@ class FenceState:
 
     def set_position(self, position):
         self.state[StateHelper.POSITION_KEY] = Limits.get_postion_in_limits(position)
+        return self
+
+    def change_position(self, change):
+        self.set_position(self.get_position() + change)
         return self
