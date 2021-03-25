@@ -1,8 +1,8 @@
-Motor - https://odriverobotics.com/shop/odrive-custom-motor-d6374-150kv
-Motor driver 56V = https://odriverobotics.com/shop/odrive-v36
-Shaft encoder - https://odriverobotics.com/shop/cui-amt-102
-48V 10Amp power supply - https://www.amazon.com/Switching-Adapter-Transformers-Modules-S-500W-48V/dp/B07JN6M2LB/ref=sr_1_3?dchild=1&keywords=48v+power+supply+alitove&qid=1611456865&sr=8-3
-Jog wheel - https://www.amazon.com/gp/product/B07KZQBBV5/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1
+- Calibration states.
+    - Motor
+    - Encoder
+    - Stops
+    - Revolutions per inch
+    - Zero
 
- - Set filtered position for closed loop
- - Connect to UI to set position with slider
+

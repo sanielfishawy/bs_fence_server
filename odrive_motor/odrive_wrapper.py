@@ -1,15 +1,11 @@
 import time
 import logging
 import odrive
-from odrive.enums import *
-if __name__ == '__main__':
-    from odrive_error import OdriveError
-else:
-    from .odrive_error import OdriveError
 
+from odrive.enums import *
+from .odrive_error import OdriveError
 
 class OdriveWrapper:
-    REVELOUTIONS_PER_INCH = 50/9.828
 
     # ODrive.Axis.AxisState
     AXIS_STATES = {
@@ -46,43 +42,142 @@ class OdriveWrapper:
         INPUT_MODE_MIRROR: 'mirror',
     }
 
+    _instance = None
+
     def __init__(
         self,
         axis=0,
     ):
-        self.odrive = odrive.find_any()
+        if self.__class__._instance is not None:
+            raise Exception(f'{self.__class__.__name__} is a singleton class call get_instance!')
+        self.__class__._instance = self
+
+        self.odrive = self.get_odrive()
+        if not self.odrive:
+            raise Exception('No odrive found')
+
         self.axis = self.odrive.axis0 if axis == 0 else self.odrive.axis1
         self.odrive_error = OdriveError(odrv=self.odrive, axis=axis)
         logging.basicConfig(level=logging.INFO)
 
-        self.odrive_error.log_errors()
-        self.odrive_error.clear_errors()
         self.stop()
-        self.calibrate_encoder()
-        self.axis.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
-        self.axis.controller.config.input_mode = INPUT_MODE_POS_FILTER
-        self.axis.controller.config.input_filter_bandwidth = 8
-        self.set_velocity_limit(80)
-        self.odrive_error.log_errors()
+        # self.full_calibration_and_save()
+        self.calibrate_motor_and_save()
+        self.calibrate_encoder_and_save()
 
-    def calibrate_motor_and_save(self):
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            OdriveWrapper()
+        return cls._instance
+
+    def get_odrive(self):
+        od = odrive.find_any(timeout=2)
+        return od
+
+    def check_and_clear_errors(self):
+        if self.odrive_error.has_errors():
+            self.odrive_error.log_errors()
+            self.odrive_error.clear_errors()
+            self.odrive_error.log_errors()
+
+    def calibrate_motor_and_save(self, force=False):
+        logging.info('Start motor calibration')
+        self.check_and_clear_errors()
+
+        if force:
+            self.axis.motor.config.pre_calibrated = False
+
+        if self.axis.motor.config.pre_calibrated:
+            logging.info('Motor was precalibrated. Use force=True to force another calibration')
+            return
+
         self.axis.requested_state = AXIS_STATE_MOTOR_CALIBRATION
         while self.axis.current_state != AXIS_STATE_IDLE:
             time.sleep(0.1)
+
+        if self.odrive_error.has_errors():
+            raise CalibrationError(self.odrive_error.get_error_string())
+
         self.axis.motor.config.pre_calibrated = True
         self.odrive.save_configuration()
-        logging.info('Calibrated motor and saved configuration')
-        o.odrive_error.log_errors()
-        o.odrive_error.clear_errors()
+        logging.info('Done motor calibration')
 
-    def calibrate_encoder(self):
+    def calibrate_encoder_and_save(self, force=False):
         logging.info('Start encoder calibration')
+
+        self.check_and_clear_errors()
+
+        if force:
+            self.axis.encoder.config.pre_calibrated = False
+
+        if self.axis.encoder.config.pre_calibrated:
+            logging.info('Encoder was precalibrated. Use force=True to force another calibration')
+            return
+
+        self.axis.encoder.config.use_index = True
+        self.encoder_index_search()
         self.axis.requested_state = AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+
         while self.axis.current_state != AXIS_STATE_IDLE:
             time.sleep(0.1)
+
+        if self.odrive_error.has_errors():
+            raise CalibrationError(self.odrive_error.get_error_string())
+
+        self.axis.encoder.config.pre_calibrated = True
+        self.axis.config.startup_encoder_index_search = True
+        self.odrive.save_configuration()
         logging.info('Done encoder calibration')
 
-    def run(self):
+    def full_calibration_and_save(self, force=False):
+        logging.info('Start full calibration')
+        self.check_and_clear_errors()
+
+        if force:
+            self.axis.encoder.config.pre_calibrated = False
+            self.axis.motor.config.pre_calibrated = False
+
+        self.axis.encoder.config.use_index = True
+        self.axis.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+        while self.axis.current_state != AXIS_STATE_IDLE:
+            time.sleep(0.1)
+
+        if self.odrive_error.has_errors():
+            raise CalibrationError(self.odrive_error.get_error_string())
+
+        self.axis.encoder.config.pre_calibrated = True
+        self.axis.motor.config.pre_calibrated = True
+        self.odrive.save_configuration()
+        logging.info('Done full calibration')
+
+    def encoder_index_search(self):
+        logging.info('Start encoder index search')
+
+        self.check_and_clear_errors()
+
+        self.axis.encoder.config.use_index = True
+        self.axis.requested_state = AXIS_STATE_ENCODER_INDEX_SEARCH
+
+        while self.axis.current_state != AXIS_STATE_IDLE:
+            time.sleep(0.1)
+
+        if self.odrive_error.has_errors():
+            raise CalibrationError(self.odrive_error.get_error_string())
+
+        logging.info('Done encoder index search')
+
+    def run(self, filter=True, bandwith=8, pos_gain=300, velocity_limit=30):
+        logging.info('Motor run')
+        self.axis.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
+        if filter:
+            self.axis.controller.config.input_mode = INPUT_MODE_POS_FILTER
+        else:
+            self.axis.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
+
+        self.axis.controller.config.pos_gain = pos_gain
+        self.axis.controller.config.input_filter_bandwidth = bandwith
+        self.set_velocity_limit(velocity_limit)
         self.axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 
     def stop(self):
@@ -98,9 +193,6 @@ class OdriveWrapper:
     def set_position(self, pos):
         self.axis.controller.input_pos = pos
 
-    def set_position_inches(self, pos):
-        self.set_position(pos * self.__class__.REVELOUTIONS_PER_INCH)
-
     def get_position(self):
         return self.axis.encoder.pos_estimate
 
@@ -113,7 +205,6 @@ class OdriveWrapper:
     def get_input_mode(self):
         return self.__class__.INPUT_MODES[self.axis.controller.config.input_mode]
 
-if __name__ == '__main__':
-    o = OdriveWrapper()
-    # o.odrive_error.log_errors()
+class CalibrationError(Exception):
     pass
+

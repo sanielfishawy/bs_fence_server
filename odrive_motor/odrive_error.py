@@ -117,10 +117,28 @@ class OdriveError:
         return self.error_types
 
     def log_errors(self):
-        logging.info('ODRIVE ERRORS:')
+        logging.info(f"ODRIVE ERRORS: {'no errors' if not self.has_errors() else ''}")
         errors = self.get_errors()
         for error in errors:
-            logging.info(f'{error.name}: {error.errors}')
+            if error.errors:
+                logging.info(f'{error.name}: {error.errors}')
+
+    def get_error_string(self):
+        str = ''
+        str += f"ODRIVE ERRORS: {'no errors' if not self.has_errors() else ''}\n"
+        errors = self.get_errors()
+        for error in errors:
+            if error.errors:
+                str += f'{error.name}: {error.errors}\n'
+        return str
+
+
+    def has_errors(self):
+        errors = self.get_errors()
+        for error in errors:
+            if error.errors: return True
+        return False
+
 
 class ErrorType:
 
@@ -136,8 +154,3 @@ class ErrorType:
         for err_code in self.error_codes.keys():
             if err_code & err != 0:
                 self.errors.append(self.error_codes[err_code])
-
-
-if __name__ == '__main__':
-    e = OdriveError()
-    pass

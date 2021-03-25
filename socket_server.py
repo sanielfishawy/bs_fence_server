@@ -2,7 +2,7 @@ from flask import Flask
 from flask_socketio import SocketIO
 from werkzeug import debug
 from odrive_motor.odrive_wrapper import OdriveWrapper
-from fence_state import FenceState, StateHelper
+from fence_state import SawState, StateHelper
 
 class Commands:
     SAVE_POSITION= 'save_position'
@@ -12,7 +12,7 @@ class ParameterKeys:
     COMMAND_KEY = 'command'
     POSITION_KEY = 'position'
 
-fence_state = FenceState()
+fence_state = SawState()
 motor = OdriveWrapper(axis=0)
 motor.run()
 

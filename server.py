@@ -7,7 +7,7 @@ from flask import Flask, request, json
 import asyncio
 import speech_recognition
 from werkzeug.serving import is_running_from_reloader
-from fence_state import FenceState, StateHelper
+from fence_state import SawState, StateHelper
 # from motor.threadbased import Motor
 from odrive_motor.odrive_wrapper import OdriveWrapper
 # from nextion_client import NextionClient
@@ -33,7 +33,7 @@ arg_parser.add_argument('-p', '--port',
 
 PORT = arg_parser.parse_known_args()[0].port
 
-fence_state = FenceState()
+fence_state = SawState()
 # motor = Motor()
 # nextion = NextionClient()
 motor = OdriveWrapper(axis=0)
