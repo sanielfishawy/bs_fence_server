@@ -1,8 +1,29 @@
 - Calibration states.
-    - Motor
-    - Encoder
+    - Motor  Automatic
+    - Encoder Automatic
     - Stops
+        - Ask for permission before executing.
+        - Do not allow jog or motion before setting.
+        - Save and use only negative side.
+        - Can be manually executed at anytime.
     - Revolutions per inch
+        - Manual set to approximate
+        - Routine to calibrate
+            - Handled in the UI
+            - Pass  pos1, pos2, inches.
+        - Save and use for future
     - Zero
+        - Manual set
+        - Jog and set
+        - Save and use for future
 
-
+- UI
+    - Set stops if not set.
+    - Allow Jog when stops are set.
+        - Power up jog wheel
+        - Set up wifi
+        - saw_up_down_control
+            - Handles calibration routines
+            - Handles all commands to the blade
+    - Save state
+    -

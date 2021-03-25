@@ -17,7 +17,6 @@ class Limits:
     def get_max_position(cls):
         return SawState.get_max_position()
 
-
 class SawState:
     POSITION_KEY = 'position'
     POSITION_INCHES_KEY = 'position_inches'
@@ -28,6 +27,7 @@ class SawState:
     REVOLUTIONS_PER_INCH_KEY = 'revolutions_per_inch'
     LIMITS_SET_KEY = 'limits_set'
     ZERO_POSITION_KEY = 'zero_position'
+    ERROR_KEY = 'error'
 
     POSITION = 0
     MIN_POSITION = -50
@@ -35,6 +35,7 @@ class SawState:
     REVOLUTIONS_PER_INCH = 5.0
     LIMITS_SET = False
     ZERO_POSITION = 0
+    ERROR = set()
 
     @classmethod
     def get_state(cls):
@@ -48,6 +49,7 @@ class SawState:
             cls.REVOLUTIONS_PER_INCH_KEY: cls.get_revolutions_per_inch(),
             cls.LIMITS_SET_KEY: cls.get_limits_set(),
             cls.ZERO_POSITION_KEY: cls.get_zero_position(),
+            cls.ERROR_KEY: cls.ERROR,
         }
 
     @classmethod
@@ -76,11 +78,6 @@ class SawState:
     def set_zero_position(cls, pos):
             cls.ZERO_POSITION = pos
             return cls
-
-    @classmethod
-    def change_position(cls, change):
-        cls.set_position(cls.get_position() + change)
-        return cls.get_position()
 
     @classmethod
     def set_max_position(cls, pos):
@@ -139,3 +136,11 @@ class SawState:
     @classmethod
     def get_revolutions_per_inch(cls):
         return cls.REVOLUTIONS_PER_INCH
+
+    @classmethod
+    def add_error(cls, error):
+        cls.ERROR.add(error)
+
+    @classmethod
+    def clear_error(cls):
+        cls.ERROR = set()
