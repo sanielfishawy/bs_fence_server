@@ -191,6 +191,7 @@ class OdriveWrapper:
         return self.__class__.CONTROL_MODES[self.axis.controller.config.control_mode]
 
     def set_position(self, pos):
+        logging.info(f'Motor set_position {pos}')
         self.axis.controller.input_pos = pos
 
     def get_position(self):

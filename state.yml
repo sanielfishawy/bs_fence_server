@@ -1,0 +1,10 @@
+error: !!set {}
+limits_set: true
+max_position: 9.946232795715332
+max_position_inches: 2.660257434844971
+min_position: -5.3550543785095215
+min_position_inches: -0.4
+position: -5.3550543785095215
+position_inches: -0.4
+revolutions_per_inch: 5.0
+zero_position: -3.3550543785095215

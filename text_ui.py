@@ -43,7 +43,8 @@ class TextUI(Thread):
 
 
 if __name__ == '__main__':
-    TextUI().start()
+    pass
+    # TextUI().start()
 
 
 

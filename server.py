@@ -77,4 +77,4 @@ def getObjectFromRequest(request):
     return json.loads(request.data.decode())
 
 if __name__ == '__main__':
-    app.run(host= HOST, debug=False, port=PORT)
+    app.run(host= HOST, debug=False, port=PORT, cors_allowed_origins="*")

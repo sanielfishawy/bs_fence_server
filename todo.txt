@@ -2,12 +2,12 @@
     - Motor  Automatic
     - Encoder Automatic
     - Stops
-        - Ask for permission before executing.
-        - Do not allow jog or motion before setting.
+        x Ask for permission before executing.
+        x Do not allow jog or motion before setting.
         - Save and use only negative side.
-        - Can be manually executed at anytime.
+        x Can be manually executed at anytime.
     - Revolutions per inch
-        - Manual set to approximate
+        x Manual set to approximate
         - Routine to calibrate
             - Handled in the UI
             - Pass  pos1, pos2, inches.
@@ -15,7 +15,7 @@
     - Zero
         - Manual set
         - Jog and set
-        - Save and use for future
+        x Save and use for future
 
 - UI
     - Set stops if not set.
@@ -27,3 +27,12 @@
             - Handles all commands to the blade
     - Save state
     -
+
+- Client
+    - Make sure it runs on new mac
+        x Install npm and yarn
+        x Install node
+        x Test static page
+    - Make it work with sockets
+        - Add a button to test sockets
+        - 

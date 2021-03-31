@@ -28,8 +28,34 @@ class SawUpDownControl:
         cls.set_min_stop()
         SawState.set_limits_set(True)
         SawState.set_position(OdriveWrapper.get_instance().get_position())
+        cls.set_zero()
+        SawState.save_state()
         OdriveWrapper.get_instance().run()
-        logging.info(f'Set stops: max_pos: {SawState.get_max_position()} min_pos: {SawState.get_min_position()}')
+        logging.info(f'Set stops: max_pos: {SawState.get_max_position()} zero_pos: {SawState.get_zero_position()} min_pos: {SawState.get_min_position()}')
+    
+    @classmethod
+    def set_zero(cls, zero=None):
+        if not SawState.get_limits_set():
+            SawState.add_error('Attempted to set zero before finding stops')
+            return False
+
+        if zero:
+            SawState.set_zero_position(zero)
+        elif cls.get_saved_distance_from_min_stop_to_zero():
+            SawState.set_zero_position(SawState.get_min_position() + cls.get_saved_distance_from_min_stop_to_zero())
+        else:
+            SawState.set_zero_position( (SawState.get_min_position() + SawState.get_max_position()) / 2.0 )
+        
+        SawState.save_state()
+
+        return True
+
+    @classmethod
+    def get_saved_distance_from_min_stop_to_zero(cls):
+        return ( 
+                SawState.get_saved_zero_position() and 
+                SawState.get_saved_min_position() and 
+                SawState.get_saved_zero_position() - SawState.get_saved_min_position() )
 
     @classmethod
     def is_movable(cls):
@@ -48,7 +74,9 @@ class SawUpDownControl:
 
     @classmethod
     def set_position(cls, pos):
-        if cls.set_error_if_not_movable():
+        logging.info(f'set_position {pos}')
+        if cls.set_error_if_not_movable(): 
+            logging.info('not moveable returning')
             return False
 
         SawState.set_position(pos)
@@ -58,7 +86,9 @@ class SawUpDownControl:
 
     @classmethod
     def set_position_inches(cls, inches):
+        logging.info(f'set_position_inches {inches}')
         if cls.set_error_if_not_movable():
+            logging.info('not moveable returning')
             return False
 
         SawState.set_position_inches(inches)
@@ -69,6 +99,7 @@ class SawUpDownControl:
 
     @classmethod
     def change_position(cls, pos):
+        logging.info(f'change_position {pos}')
         new_pos = SawState.get_position() + pos
         return cls.set_position(new_pos)
 
@@ -87,5 +118,6 @@ class SawUpDownControl:
 if __name__ == '__main__':
     s = SawUpDownControl
     s.set_both_stops()
-    s.change_position(1)
+    s.set_zero(SawState.get_min_position() + 2)
+
     pass
