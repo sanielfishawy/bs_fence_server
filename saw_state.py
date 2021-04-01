@@ -40,7 +40,7 @@ class SawState:
     REVOLUTIONS_PER_INCH = 5.0
     LIMITS_SET = False
     ZERO_POSITION = None
-    ERROR = set()
+    ERROR = set(["error1", "error2"])
 
     @classmethod
     def get_state(cls):
@@ -74,7 +74,7 @@ class SawState:
 
     @classmethod
     def get_position_inches(cls):
-        return cls.get_position() and cls.get_inches_with_position(cls.get_position())
+        return cls.get_position() is not None and cls.get_inches_with_position(cls.get_position())
 
     @classmethod
     def get_zero_position(cls):
@@ -102,7 +102,7 @@ class SawState:
 
     @classmethod
     def get_max_position_inches(cls):
-        return cls.get_max_position() and cls.get_inches_with_position(cls.get_max_position())
+        return cls.get_max_position() is not None and cls.get_inches_with_position(cls.get_max_position())
 
     @classmethod
     def set_min_position(cls, pos):
@@ -120,7 +120,7 @@ class SawState:
 
     @classmethod
     def get_min_position_inches(cls):
-        return cls.get_min_position() and cls.get_inches_with_position(cls.get_min_position())
+        return cls.get_min_position() is not None and cls.get_inches_with_position(cls.get_min_position())
 
     @classmethod
     def set_min_and_max_position(cls, min, max):
@@ -140,14 +140,14 @@ class SawState:
 
     @classmethod
     def get_inches_with_position(cls, pos):
-        return  cls.get_zero_position() and \
-                cls.get_revolutions_per_inch() and \
-                (pos - cls.get_zero_position()) / cls.get_revolutions_per_inch()
+        return  cls.get_zero_position() is not None and \
+                cls.get_revolutions_per_inch() is not None and \
+                ((pos - cls.get_zero_position()) / cls.get_revolutions_per_inch())
 
     @classmethod
     def get_position_with_inches(cls, inches):
-        return  cls.get_zero_position() and \
-                cls.get_revolutions_per_inch() and \
+        return  cls.get_zero_position() is not None and \
+                cls.get_revolutions_per_inch() is not None and \
                 (inches * cls.get_revolutions_per_inch()) + cls.get_zero_position()
 
     @classmethod
