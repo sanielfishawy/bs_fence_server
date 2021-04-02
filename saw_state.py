@@ -34,13 +34,13 @@ class SawState:
     ZERO_POSITION_KEY = 'zero_position'
     ERROR_KEY = 'error'
 
-    POSITION = 8
+    POSITION = None
     MIN_POSITION = None
     MAX_POSITION = None
     REVOLUTIONS_PER_INCH = 5.0
     LIMITS_SET = False
     ZERO_POSITION = None
-    ERROR = set(["error1", "error2"])
+    ERROR = set()
 
     @classmethod
     def get_state(cls):
@@ -87,12 +87,14 @@ class SawState:
     @classmethod
     def set_zero_position(cls, pos):
         cls.ZERO_POSITION = pos
+        cls.save_state()
         cls.notify_observers()
         return cls
 
     @classmethod
     def set_max_position(cls, pos):
         cls.MAX_POSITION = pos
+        cls.save_state()
         cls.notify_observers()
         return cls
 
@@ -107,6 +109,7 @@ class SawState:
     @classmethod
     def set_min_position(cls, pos):
         cls.MIN_POSITION= pos
+        cls.save_state()
         cls.notify_observers()
         return cls
 
@@ -153,6 +156,7 @@ class SawState:
     @classmethod
     def set_revolutions_per_inch(cls, rpi):
         cls.REVOLUTIONS_PER_INCH = rpi
+        cls.save_state()
         cls.notify_observers()
         return cls
 
@@ -160,14 +164,20 @@ class SawState:
     def get_revolutions_per_inch(cls):
         return cls.REVOLUTIONS_PER_INCH
 
+    @staticmethod
+    def get_saved_revolutions_per_inch():
+        return SawState.get_saved_state() and SawState.get_saved_state()[SawState.REVOLUTIONS_PER_INCH_KEY]
+
     @classmethod
     def add_error(cls, error):
         cls.ERROR.add(error)
+        cls.save_state()
         cls.notify_observers()
 
     @classmethod
     def clear_error(cls):
         cls.ERROR = set()
+        cls.save_state()
         cls.notify_observers()
     
     @classmethod
@@ -181,6 +191,21 @@ class SawState:
         except FileNotFoundError:
             logging.info('No saved state found')
             return None
+
+    @classmethod
+    def initialize_from_saved_state(cls):
+        saved_state = cls.get_saved_state()
+
+        if saved_state is None:
+            return
+
+        # cls.POSITION            = saved_state[cls.POSITION_KEY]
+        # cls.MIN_POSITION        = saved_state[cls.MIN_POSITION_KEY]
+        # cls.MAX_POSITION        = saved_state[cls.MAX_POSITION_KEY]
+        cls.REVOLUTIONS_PER_INCH = saved_state[cls.REVOLUTIONS_PER_INCH_KEY]
+        # cls.LIMITS_SET          = saved_state[cls.LIMITS_SET_KEY]
+        # cls.ZERO_POSITION       = saved_state[cls.ZERO_POSITION_KEY]
+        cls.ERROR                = saved_state[cls.ERROR_KEY]
 
     @classmethod
     def add_observer(cls, callback):

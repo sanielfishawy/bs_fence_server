@@ -17,7 +17,7 @@ class SawUpDownControl:
     @classmethod
     def set_max_stop(cls):
         try: 
-            SawState.set_max_position(StopFinder().find_stop() - cls.MARGIN_FROM_STOP)
+            SawState.set_max_position(StopFinder().find_stop())
         except OdriveException as err:
             SawState.add_error(str(err))
         except:
@@ -26,7 +26,7 @@ class SawUpDownControl:
     @classmethod
     def set_min_stop(cls):
         try:
-            SawState.set_min_position(StopFinder().find_stop(positive_direction=False) + cls.MARGIN_FROM_STOP)
+            SawState.set_min_position(StopFinder().find_stop(positive_direction=False))
         except OdriveException as err:
             SawState.add_error(str(err))
         except:
@@ -34,12 +34,14 @@ class SawUpDownControl:
 
     @classmethod
     def set_both_stops(cls):
+        SawState.set_limits_set(False)
         cls.set_max_stop()
         cls.set_min_stop()
+        cls.set_stop_margins()
         SawState.set_limits_set(True)
         cls.set_zero()
+        logging.info(f'Set stops: min_pos: {SawState.get_min_position()} zero_pos: {SawState.get_zero_position()} max_pos: {SawState.get_max_position()}')
         SawState.save_state()
-        logging.info(f'Set stops: max_pos: {SawState.get_max_position()} zero_pos: {SawState.get_zero_position()} min_pos: {SawState.get_min_position()}')
 
         try:
             SawState.set_position(OdriveWrapper.get_instance().get_position())
@@ -51,19 +53,41 @@ class SawUpDownControl:
         cls.run() 
     
     @classmethod
+    def set_stop_margins(cls):
+        if SawState.get_min_position() is None or SawState.get_max_position() is None:
+            return
+
+        margin = 0.1 * (SawState.get_max_position() - SawState.get_min_position())
+
+        if margin > cls.MARGIN_FROM_STOP:
+            margin = cls.MARGIN_FROM_STOP
+
+        SawState.set_min_position(SawState.get_min_position() + margin)
+        SawState.set_max_position(SawState.get_max_position() - margin)
+
+    @classmethod
     def set_zero(cls, zero=None):
         if not SawState.get_limits_set():
+            print('foo')
+            logging.error('Attempted to set zero before finding stops')
             SawState.add_error('Attempted to set zero before finding stops')
             return False
 
-        if zero:
-            SawState.set_zero_position(zero)
+        setpoint = zero
+        if setpoint:
+            setpoint = max(SawState.get_min_position(), setpoint)
+            zero = min(SawState.get_max_position(), setpoint)
         elif cls.get_saved_distance_from_min_stop_to_zero():
-            SawState.set_zero_position(SawState.get_min_position() + cls.get_saved_distance_from_min_stop_to_zero())
+            print(f"Using saved distance={cls.get_saved_distance_from_min_stop_to_zero()} from min={SawState.get_min_position()}")
+            setpoint = SawState.get_min_position() + cls.get_saved_distance_from_min_stop_to_zero()
+            print(f'Got: min_pos: {SawState.get_min_position()} zero_pos: {setpoint} max_pos: {SawState.get_max_position()}')
 
-        if not SawState.get_zero_position() or SawState.get_zero_position() > SawState.get_max_position():
-            SawState.set_zero_position( (SawState.get_min_position() + SawState.get_max_position()) / 2.0 )
+        if not setpoint or setpoint > SawState.get_max_position():
+            print("Using average distance")
+            setpoint = (SawState.get_min_position() + SawState.get_max_position()) / 2.0 
+            print(f'Got: min_pos: {SawState.get_min_position()} zero_pos: {setpoint} max_pos: {SawState.get_max_position()}')
         
+        SawState.set_zero_position(setpoint)
         SawState.save_state()
 
         return True

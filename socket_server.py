@@ -13,6 +13,7 @@ from text_ui import TextUI
 
 
 logging.basicConfig(level=logging.DEBUG)
+SawState.initialize_from_saved_state()
 
 class Commands:
     SAVE_POSITION = 'save_position'
@@ -69,7 +70,7 @@ def save_revolutions_per_inch(rpi):
 @socketio.on(Commands.SAVE_ZERO_POSITION)
 def save_zero_position(zero):
     logging.info(f'save_zero_position {zero}')
-    SawState.set_zero_position(zero)
+    SawUpDownControl.set_zero_position(zero=zero)
 
 def broadcast_state(state):
     emit(Commands.UPDATE_STATE, state, broadcast=True)
