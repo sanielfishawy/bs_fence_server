@@ -54,7 +54,7 @@ class SawState:
             cls.REVOLUTIONS_PER_INCH_KEY: cls.get_revolutions_per_inch(),
             cls.LIMITS_SET_KEY: cls.get_limits_set(),
             cls.ZERO_POSITION_KEY: cls.get_zero_position(),
-            cls.ERROR_KEY: list(cls.ERROR),
+            cls.ERROR_KEY: list(cls.ERROR.copy()),
         }
 
     @classmethod
@@ -205,7 +205,7 @@ class SawState:
         cls.REVOLUTIONS_PER_INCH = saved_state[cls.REVOLUTIONS_PER_INCH_KEY]
         # cls.LIMITS_SET          = saved_state[cls.LIMITS_SET_KEY]
         # cls.ZERO_POSITION       = saved_state[cls.ZERO_POSITION_KEY]
-        cls.ERROR                = saved_state[cls.ERROR_KEY]
+        cls.ERROR                = set(saved_state[cls.ERROR_KEY])
 
     @classmethod
     def add_observer(cls, callback):

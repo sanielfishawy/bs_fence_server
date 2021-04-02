@@ -168,7 +168,7 @@ class OdriveWrapper:
 
         logging.info('Done encoder index search')
 
-    def run(self, filter=True, bandwith=8, pos_gain=300, velocity_limit=30):
+    def run(self, filter=True, bandwith=8, pos_gain=300, velocity_limit=50):
         logging.info('Motor run')
         self.axis.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
         if filter:

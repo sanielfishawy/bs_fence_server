@@ -51,6 +51,7 @@ class SawUpDownControl:
             raise
 
         cls.run() 
+        # cls.set_position_inches(0)
     
     @classmethod
     def set_stop_margins(cls):
@@ -178,10 +179,3 @@ class SawUpDownControl:
             SawState.add_error('Attempted motion before finding stops')
             return True
         return False
-
-# if __name__ == '__main__':
-#     s = SawUpDownControl
-#     s.set_both_stops()
-#     s.set_zero(SawState.get_min_position() + 2)
-
-    # pas
