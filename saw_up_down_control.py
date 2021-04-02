@@ -1,7 +1,7 @@
 import logging
 from saw_state import SawState
 from odrive_motor.stop_finder import StopFinder
-from odrive_motor.odrive_wrapper import OdriveWrapper, OdriveError
+from odrive_motor.odrive_wrapper import OdriveWrapper, OdriveException
 
 class SawUpDownControl:
 
@@ -18,7 +18,7 @@ class SawUpDownControl:
     def set_max_stop(cls):
         try: 
             SawState.set_max_position(StopFinder().find_stop() - cls.MARGIN_FROM_STOP)
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(str(err))
         except:
             raise
@@ -27,7 +27,7 @@ class SawUpDownControl:
     def set_min_stop(cls):
         try:
             SawState.set_min_position(StopFinder().find_stop(positive_direction=False) + cls.MARGIN_FROM_STOP)
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(str(err))
         except:
             raise
@@ -43,7 +43,7 @@ class SawUpDownControl:
 
         try:
             SawState.set_position(OdriveWrapper.get_instance().get_position())
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(err)
         except:
             raise
@@ -60,7 +60,8 @@ class SawUpDownControl:
             SawState.set_zero_position(zero)
         elif cls.get_saved_distance_from_min_stop_to_zero():
             SawState.set_zero_position(SawState.get_min_position() + cls.get_saved_distance_from_min_stop_to_zero())
-        else:
+
+        if not SawState.get_zero_position() or SawState.get_zero_position() > SawState.get_max_position():
             SawState.set_zero_position( (SawState.get_min_position() + SawState.get_max_position()) / 2.0 )
         
         SawState.save_state()
@@ -82,19 +83,19 @@ class SawUpDownControl:
     #  Move blade
     #
     @classmethod
-    def run():
+    def run(cls):
         try:
             OdriveWrapper.get_instance().run()
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(str(err))
         except:
             raise
 
     @classmethod
-    def stop():
+    def stop(cls):
         try:
             OdriveWrapper.get_instance().stop()
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(str(err))
         except:
             raise
@@ -110,7 +111,7 @@ class SawUpDownControl:
         pos = SawState.get_position()
         try:
             OdriveWrapper.get_instance().set_position(pos)
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(err)
         except:
             raise
@@ -129,7 +130,7 @@ class SawUpDownControl:
         pos_inches = SawState.get_position_inches()
         try:
             OdriveWrapper.get_instance().set_position(pos)
-        except OdriveError as err:
+        except OdriveException as err:
             SawState.add_error(str(err))
         except:
             raise 

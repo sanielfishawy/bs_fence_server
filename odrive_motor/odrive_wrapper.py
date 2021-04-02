@@ -49,11 +49,11 @@ class OdriveWrapper:
         axis=0,
     ):
         if self.__class__._instance is not None:
-            raise OdriveError(f'{self.__class__.__name__} is a singleton class call get_instance!')
+            raise OdriveException(f'{self.__class__.__name__} is a singleton class call get_instance!')
 
         self.odrive = self.get_odrive()
         if not self.odrive:
-            raise OdriveError('No odrive found')
+            raise OdriveException('No odrive found')
 
         self.axis = self.odrive.axis0 if axis == 0 else self.odrive.axis1
         self.odrive_error = OdriveError(odrv=self.odrive, axis=axis)
@@ -65,7 +65,7 @@ class OdriveWrapper:
         self.calibrate_encoder_and_save()
 
         self.__class__._instance = self
-        
+
     @classmethod
     def get_instance(cls):
         if cls._instance is None:
@@ -98,7 +98,7 @@ class OdriveWrapper:
             time.sleep(0.1)
 
         if self.odrive_error.has_errors():
-            raise OdriveError(self.odrive_error.get_error_string())
+            raise OdriveException(self.odrive_error.get_error_string())
 
         self.axis.motor.config.pre_calibrated = True
         self.odrive.save_configuration()
@@ -124,7 +124,7 @@ class OdriveWrapper:
             time.sleep(0.1)
 
         if self.odrive_error.has_errors():
-            raise OdriveError(self.odrive_error.get_error_string())
+            raise OdriveException(self.odrive_error.get_error_string())
 
         self.axis.encoder.config.pre_calibrated = True
         self.axis.config.startup_encoder_index_search = True
@@ -145,7 +145,7 @@ class OdriveWrapper:
             time.sleep(0.1)
 
         if self.odrive_error.has_errors():
-            raise OdriveError(self.odrive_error.get_error_string())
+            raise OdriveException(self.odrive_error.get_error_string())
 
         self.axis.encoder.config.pre_calibrated = True
         self.axis.motor.config.pre_calibrated = True
@@ -164,7 +164,7 @@ class OdriveWrapper:
             time.sleep(0.1)
 
         if self.odrive_error.has_errors():
-            raise OdriveError(self.odrive_error.get_error_string())
+            raise OdriveException(self.odrive_error.get_error_string())
 
         logging.info('Done encoder index search')
 
@@ -207,6 +207,6 @@ class OdriveWrapper:
     def get_input_mode(self):
         return self.__class__.INPUT_MODES[self.axis.controller.config.input_mode]
 
-class OdriveError(Exception):
+class OdriveException(Exception):
     pass
 
