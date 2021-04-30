@@ -5,6 +5,8 @@ import odrive
 from odrive.enums import *
 from .odrive_error import OdriveError
 
+from .motor_config import MotorConfig
+
 class OdriveWrapper:
 
     # ODrive.Axis.AxisState
@@ -46,7 +48,8 @@ class OdriveWrapper:
 
     def __init__(
         self,
-        axis=0,
+        axis=1,
+        motor=None,
     ):
         if self.__class__._instance is not None:
             raise OdriveException(f'{self.__class__.__name__} is a singleton class call get_instance!')
@@ -54,6 +57,9 @@ class OdriveWrapper:
         self.odrive = self.get_odrive()
         if not self.odrive:
             raise OdriveException('No odrive found')
+
+        self.motor = motor
+        MotorConfig(motor, self.odrive, axis).configure_and_save()
 
         self.axis = self.odrive.axis0 if axis == 0 else self.odrive.axis1
         self.odrive_error = OdriveError(odrv=self.odrive, axis=axis)
@@ -168,7 +174,7 @@ class OdriveWrapper:
 
         logging.info('Done encoder index search')
 
-    def run(self, filter=True, bandwith=8, pos_gain=300, velocity_limit=50):
+    def run(self, filter=True, bandwith=8, pos_gain=None, velocity_limit=50):
         logging.info('Motor run')
         self.axis.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
         if filter:
@@ -176,7 +182,8 @@ class OdriveWrapper:
         else:
             self.axis.controller.config.input_mode = INPUT_MODE_PASSTHROUGH
 
-        self.axis.controller.config.pos_gain = pos_gain
+        if pos_gain:
+            self.axis.controller.config.pos_gain = pos_gain
         self.axis.controller.config.input_filter_bandwidth = bandwith
         self.set_velocity_limit(velocity_limit)
         self.axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
